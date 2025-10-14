@@ -1,0 +1,8 @@
+Flask==3.1.2
+PyJWT==2.3.0
+PyJWT==2.10.1
+pyotp==2.9.0
+python-dotenv==1.1.1
+qrcode==8.2
+Requests==2.32.5
+urllib3==1.26.5
