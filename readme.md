@@ -16,7 +16,7 @@ ZeroSpice is a python-based toolkit enabling secure remote access from anywhere 
 
 ## Overview
 
-ZeroSpice is a client-server toolkit that leverages two open source technologies: the [ZeroTier](https://www.zerotier.com/) networking protocol and the [SPICE](https://www.spice-space.org/) remote access protocol to deliver robust remote access to virtual machines from anywhere. Using this toolkit, you can access Proxmox virtual machines hosted on an internal network without exposing the Proxmox server, port forwarding through a public endpoint, or exposing Proxmox credentials and API keys. All connections benefir from strong end-to-end encryption while maintaining the speed/capability of the SPICE protocol. The client and server are written in python, with an optional GUI created using Tom Schimansky's [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter).
+ZeroSpice is a client-server toolkit that leverages two open source technologies: the [ZeroTier](https://www.zerotier.com/) networking protocol and the [SPICE](https://www.spice-space.org/) remote access protocol to deliver robust remote access to virtual machines from anywhere. Using this toolkit, you can access Proxmox virtual machines hosted on an internal network without exposing the Proxmox server, port forwarding through a public endpoint, or exposing Proxmox credentials and API keys. All connections benefit from strong end-to-end encryption while maintaining the speed/capability of the SPICE protocol. The client and server are written in python, with an optional GUI created using Tom Schimansky's [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter).
 
 ## Problem Statement
 
@@ -52,7 +52,7 @@ This toolset is designed to run on two+ hosts: a proxy server and one or more cl
          │ (API)           │ (SPICE)
          │                 │
          ▼                 ▼
-    ┌────────────────────────┐              ┌─────────────────┐
+    ┌────kit─────────────────┐              ┌─────────────────┐
     │    Proxy Server        │══════════════│    Proxmox      │
     │    (Flask API)         │ :8006        │   VE Host       │
     └────────────────────────┘ API Requests └─────────────────┘
@@ -73,16 +73,16 @@ ZeroTier's mesh networking solves the fundamental challenge of secure remote acc
 - **Peer-to-peer routing:** Devices using ZeroTier communicate directly without port forwarding or reverse proxies.
 - **NAT traversal:** ZeroTier has robust route finding and NAT translation making communication to and from almost anywhere on the internet possible
 - **End-to-end encryption:** All ZeroTier traffic comes across the wire as AES-256 encrypted, stateless UDP traffic.
-- Open source: Unlike most commerical alternatives ZeroTier is fully customizable and has a solid SDK for deeper integrations.
-I'd like to build a future iteration of this toolset that integrates zerotier directly into the scripts so you don't need to install the heavier zerotier-one service to the hosts. This level of granularity is something commercial mesh routing services do not offer.
+- Open source: Unlike most commercial alternatives ZeroTier is fully customizable and has a solid SDK for deeper integrations.
+I'd like to build a future iteration of this toolkit that integrates ZeroTier directly into the scripts so you don't need to install the heavier zerotier-one service to the hosts. This level of granularity is something commercial mesh routing services do not offer.
 
 ### Why a Proxy Server?
 
 A proxy server solves the credential exposure problem. Without it, any host using SPICE would need to save either credentials or Proxmox API key, creating various security risks by doing so.
 - **Credential theft:** In the event a client running ZeroSpice is compromised, neither the Proxmox host or credentials / API keys for the Proxmox host are at direct risk.
-- **Overprivileged access:** Proxmox API keys have a limited granularity of permissions. Almost inevidably, a Proxmox API key will be able to do slightly more than the exact thing you want it to do. By putting that API key behind a proxy, ZeroSpice can restrict user functions to exactly what the proxy offers clients and nothing more.
+- **Over-privileged access:** Proxmox API keys have a limited granularity of permissions. Almost inevitably, a Proxmox API key will be able to do slightly more than the exact thing you want it to do. By putting that API key behind a proxy, ZeroSpice can restrict user functions to exactly what the proxy offers clients and nothing more.
 - **User authentication:** Since proxmox secrets are *not* used to authenticate authorized clients, *something* has to. The proxy server enables user authentication (currently using TOTP) to prevent unauthorized access to the API functions, even within the ZeroTier environment.
-- **Distributed Secrets:** A tertiary benefit to the proxer server is that multiple clients using ZeroSpice will not have to deal with the headaches of shared secrets. The proxy server is able to centrally manage all aspects of authorization (aside from joining the machines to ZeroTier... for now).
+- **Distributed Secrets:** A tertiary benefit to the proxy server is that multiple clients using ZeroSpice will not have to deal with the headaches of shared secrets. The proxy server is able to centrally manage all aspects of authorization (aside from joining the machines to ZeroTier... for now).
 The proxy server acts as a credential vault and authorization gateway, exposing a limited number of API functions for VM access to authorized clients.
 
 ### Security Model
@@ -97,4 +97,4 @@ This model protects against several flaws / weaknesses in other remote access im
 - Credential theft from compromised client devices
 - Unauthorized access from compromised client devices
 
-Noteably, *session hijacking* is still a legitimate attack vector against ZeroSpice. This is an inherant risk to all remote access protocols. If the JWT for the Proxy API and a SPICE configuration file are stolen in real time, they could be used to take over the user session. I am planning to at least partially mitigate this in future versions of the tool by making the port forwarder more picky about who and when it forwards traffic for.
+Notably, *session hijacking* is still a legitimate attack vector against ZeroSpice. This is an inherent risk to all remote access protocols. If the JWT for the Proxy API and a SPICE configuration file are stolen in real time, they could be used to take over the user session. I am planning to at least partially mitigate this in future versions of the tool by making the port forwarder more picky about who and when it forwards traffic for.
