@@ -1,0 +1,8 @@
+Flask
+PyJWT
+pyotp
+python-dotenv
+qrcode
+Requests
+urllib3
+Pillow

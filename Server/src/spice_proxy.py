@@ -238,3 +238,4 @@ def run_spice_proxy_server(config):
         port=config["PROXY_HTTP_PORT"],
         threaded=True,
     )
+
