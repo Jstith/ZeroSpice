@@ -2,7 +2,7 @@
 
 # ZeroSpice Installation Guide
 
-ZeroSpice enables secure remote access to Proxmox VMs via SPICE protocol over a ZeroTier network. This guide walks you through setting up both the server and client components.
+ZeroSpice enables secure remote access to Proxmox VMs via SPICE protocol over a ZeroTier network. To achieve this, ZeroSpice uses a configured server and at least one configured client. This guide walks you through setting up both the server and client components.
 
 ## Architecture Overview
 ```
@@ -12,17 +12,21 @@ ZeroSpice enables secure remote access to Proxmox VMs via SPICE protocol over a 
 └─────────┘         └──────────────┘         └─────────┘
 ```
 
-- **ZeroSpice Server**: Proxy server that handles authentication and forwards SPICE connections
-- **ZeroSpice Client**: Desktop application for connecting to VMs
-- **ZeroTier Network**: Secure encrypted network connecting server and clients
+- **ZeroSpice Client**: Desktop application for connecting to VMs.
+- **ZeroSpice Server**: Linux application for brokering SPICE sessions btweeen Proxmox and ZeroSpice Clients
 
 ## Prerequisites
 
 - **Server Requirements**:
   - Linux server (Ubuntu 20.04+ recommended)
-  - Root/sudo access
-  - Public IP or accessible via ZeroTier
   - Python 3.10+
+  - ZeroTier application
+  - Network access to Proxmox
+      - ZeroSpice Server is intended to access Proxmox via a private LAN.
+      - Ensure the ZeroSpice Server can access the Proxmox API and SPICE ports.
+  - Network access to ZeroTier root servers
+      - Standard internet access achieves this.
+      - If you wish to run a more secure implementation, you can restrict internet access but allowlist ZeroTier's global root servers (https://docs.zerotier.com/whitelist/). However, this is not recommended for most users. Doing so will decrease the speed of ZeroTier connections by restricting the protocol's ability to broker more efficient routes between client(s) and the server.
 
 - **Proxmox Requirements**:
   - Proxmox VE 7.0+
@@ -30,9 +34,9 @@ ZeroSpice enables secure remote access to Proxmox VMs via SPICE protocol over a 
   - VMs configured with SPICE display
 
 - **Client Requirements**:
-  - Windows/Linux/macOS
-  - ZeroTier client installed
-  - [List other client requirements]
+  - Python 3.10+
+  - ZeroTier application
+  - virt-viewer application
 
 ---
 
@@ -132,11 +136,11 @@ ZeroTier creates a secure network between your server and clients.
 
 #### 3.2 Install ZeroTier on Server
 
-The installation script can install ZeroTier for you, or you can install it manually:
+The server installation script can install ZeroTier for you, or you can install it manually:
 
 **Option A: Install via install.sh (recommended)**
 
-The ZeroSpice installation script will prompt you to install ZeroTier - just follow the prompts.
+The ZeroSpice Server installation script will prompt you to install ZeroTier - just follow the prompts.
 
 **Option B: Manual Installation**
 ```bash
