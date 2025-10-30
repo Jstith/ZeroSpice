@@ -46,7 +46,7 @@ The client(s) and proxy server are joined with ZeroTier's mesh net routing proto
 <picture>
     <source media="prefers-color-scheme: dark)" srcset="./docs/ZeroSpice_Sequence_Diagram_Dark.svg">
     <source media="preferse-color-scheme: light)" srcset="./dosc/ZeroSpice_Sequence_Diagram_Light.svg">
-    <img alt="ZeroSpice Sequence Diagram"
+    <img alt="ZeroSpice Sequence Diagram" src="./docs/ZeroSpice_Sequence_Diagram_Light.svg"
 </picture>
 
 ### Why ZeroTier?
