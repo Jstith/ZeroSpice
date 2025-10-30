@@ -43,7 +43,7 @@ At its Core, ZeroSpice consists of a Proxmox host, an HTTP server, a ZeroTier ne
 
 The client(s) and proxy server are joined with ZeroTier's mesh net routing protocol, and client(s) communicate with the proxy exclusively through ZeroTier. Utilizing an HTTP API, client(s) make requests to the proxmox server through the proxy server. The Proxmox API key used to authorize actions on Proxmox is stored on the proxy server. This way, client(s) only know the ZeroTier IP of the proxy server, and only broker access to VMs through HTTP API requests.
 
-![ZeroSpice Sequence Diagram](./docs/ZeroSpice_flow.drawio.svg)
+![ZeroSpice Sequence Diagram](./docs/ZeroSpice_flow.drawio.png)
 
 ### Why ZeroTier?
 
