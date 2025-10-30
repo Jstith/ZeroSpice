@@ -1,6 +1,6 @@
-# ZeroSpice: Secure Remote Access using the Spice Protocol
+# ZeroSpice: Secure Remote Access to Proxmox VMs
 
-ZeroSpice is a python-based toolkit enabling secure remote access from anywhere to virtual machines in a private environment. Combining two open-source technologies, ZeroTier and Spice, ZeroSpice delivers a security-focused yet robust way to use virtual machines from anywhere on the internet, prioritizing encryption and least privilege to build a modern, secure access environment.
+ZeroSpice is a python-based toolkit that enables secure remote access to Proxmox VMs using the SPICE protocol in a private environment. Leveraging two open-source technologies: ZeroTier and Spice, ZeroSpice delivers a security-focused yet robust way to use virtual machines from anywhere on the internet, prioritizing accessability and least privilege to build a modern, secure access environment.
 
 ![Python 3 compatible](https://img.shields.io/badge/python-3.x-blue.svg)
 ![PyPI version](https://img.shields.io/pypi/v/bloodhound.svg)
@@ -13,10 +13,11 @@ ZeroSpice is a python-based toolkit enabling secure remote access from anywhere 
 1. [Overview](#overview)
 2. [Problem Statement](#problem-statement)
 3. [Architecture & Design](#architecture--design)
+4. [Install](#install)
 
 ## Overview
 
-ZeroSpice is a client-server toolkit that leverages two open source technologies: the [ZeroTier](https://www.zerotier.com/) networking protocol and the [SPICE](https://www.spice-space.org/) remote access protocol to deliver robust remote access to virtual machines from anywhere. Using this toolkit, you can access Proxmox virtual machines hosted on an internal network without exposing the Proxmox server, port forwarding through a public endpoint, or exposing Proxmox credentials and API keys. All connections benefit from strong end-to-end encryption while maintaining the speed/capability of the SPICE protocol. The client and server are written in python, with an optional GUI created using Tom Schimansky's [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter).
+ZeroSpice is a client-server toolkit that leverages two open source technologies: the [ZeroTier](https://www.zerotier.com/) networking protocol and the [SPICE](https://www.spice-space.org/) remote access protocol to deliver robust remote access to Proxmodx virtual machines from anywhere. Using this toolkit, you can access virtual machines hosted on a private Proxmox VE without exposing the Proxmox server, port forwarding through a public endpoint, or exposing Proxmox credentials and API keys. All connections benefit from strong end-to-end encryption while maintaining the speed/capability of the SPICE protocol. The client and server are written in python, with a GUI created using Tom Schimansky's [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter).
 
 ## Problem Statement
 
@@ -34,38 +35,15 @@ The ZeroSpice project shows that industry-standard secure remote access does not
 
 ## Architecture & Design
 
-At its Core, the ZeroSpice project consists of a pre-existing Proxmox host, a proxy server, and at least one client. The client(s) and proxy server are joined with ZeroTier's mesh net routing protocol, and client(s) communicate with the proxy exclusively through ZeroTier. Utilizing an HTTP API, client(s) make requests to the proxmox server through the proxy server. The Proxmox API key used to authorize actions on Proxmox is stored on the proxy server. This way, client(s) only know the ZeroTier IP of the proxy server, and only broker access to VMs through HTTP API requests.
+At its Core, ZeroSpice consists of a Proxmox host, an HTTP server, a ZeroTier network, and at least one client device.
+- **Proxmox Host**: Hosts virtual machines accessed via ZeroSpice. ZeroSpice does not run any code on Proxmox
+- **ZeroSpice Server**: Uses a Proxmox API key to control SPICE sessions, authenticates clients and routes sessions to them via ZeroTier
+- **ZeroSpice Client**: Authenticates to the ZeroSpice server via ZeroTier routing, receives SPICE connection from ZeroSpice server for interactive use.
+- **ZeroTier Network**: Routes traffic between the Client(s) and server using end-to-end encrypted, UDP-based mesh net routing, allowing for complex NAT traversal to route between private and public networks.
 
-This toolset is designed to run on two+ hosts: a proxy server and one or more clients. No additional code is run on the Proxmox PVE with this toolkit.
+The client(s) and proxy server are joined with ZeroTier's mesh net routing protocol, and client(s) communicate with the proxy exclusively through ZeroTier. Utilizing an HTTP API, client(s) make requests to the proxmox server through the proxy server. The Proxmox API key used to authorize actions on Proxmox is stored on the proxy server. This way, client(s) only know the ZeroTier IP of the proxy server, and only broker access to VMs through HTTP API requests.
 
-```
-┌─────────────────────┐
-│       Client        │
-│     (GUI App)       │
-└─────────────────────┘
-         │  │
-         │  │ ZeroTier Mesh Network (Encrypted)
-         │  │
-         │  └──────────────┐
-         │                 │
-         │ :8000           │ :3128
-         │ (API)           │ (SPICE)
-         │                 │
-         ▼                 ▼
-    ┌────kit─────────────────┐              ┌─────────────────┐
-    │    Proxy Server        │══════════════│    Proxmox      │
-    │    (Flask API)         │ :8006        │   VE Host       │
-    └────────────────────────┘ API Requests └─────────────────┘
-         │                     (Internal)      │
-         │ :3128                               │ :3128
-         │ Port Forward                        │ SPICE
-         │ (Internal)                          │ Protocol
-         └═════════════════════════════════════┘
-
-    Legend:
-    ───────  ZeroTier encrypted mesh
-    ═══════  Internal network
-```
+![ZeroSpice Sequence Diagram](./docs/ZeroSpice_flow.drawio.svg)
 
 ### Why ZeroTier?
 
@@ -98,3 +76,14 @@ This model protects against several flaws / weaknesses in other remote access im
 - Unauthorized access from compromised client devices
 
 Notably, *session hijacking* is still a legitimate attack vector against ZeroSpice. This is an inherent risk to all remote access protocols. If the JWT for the Proxy API and a SPICE configuration file are stolen in real time, they could be used to take over the user session. I am planning to at least partially mitigate this in future versions of the tool by making the port forwarder more picky about who and when it forwards traffic for.
+
+## Install
+
+Detailed instructions to install ZeroSpice can be found in [INSTALL.md](./INSTALL.md).
+
+The installation instructions cover all necessary components of setting up ZeroSpice, including:
+- Setting up a Proxmox API token
+- Setting up a ZeroTier network
+- Setting up the ZeroSpice server
+- Creating user accounts & secrets on the ZeroSpice server
+- Installing the ZeroSpice client
