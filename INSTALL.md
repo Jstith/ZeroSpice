@@ -6,7 +6,7 @@ ZeroSpice enables secure remote access to Proxmox VMs via SPICE protocol over a 
 
 ## Architecture Overview
 ```
-   Proxmox VE             ZerpSpice Server          ZeroSpice Client
+   Proxmox VE            ZerpSpice Server       ZeroSpice Client
 ┌─────------────┐       ┌──────------───┐       ┌──------───────┐
 │ LAN Interface │       │ LAN Interface │       │ LAN Interface │
 │  (Rest API)   │<------│(HTTP Request) │       │    (none)     │
