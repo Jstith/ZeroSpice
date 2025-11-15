@@ -11,13 +11,24 @@ ZeroSpice is a python-based toolkit that enables secure remote access to Proxmox
 ## Table on Contents
 
 1. [Overview](#overview)
-2. [Problem Statement](#problem-statement)
-3. [Architecture & Design](#architecture--design)
-4. [Install](#install)
+2. [Install](#install)
+3. [Problem Statement](#problem-statement)
+4. [Architecture & Design](#architecture--design)
 
 ## Overview
 
 ZeroSpice is a client-server toolkit that leverages two open source technologies: the [ZeroTier](https://www.zerotier.com/) networking protocol and the [SPICE](https://www.spice-space.org/) remote access protocol to deliver robust remote access to Proxmodx virtual machines from anywhere. Using this toolkit, you can access virtual machines hosted on a private Proxmox VE without exposing the Proxmox server, port forwarding through a public endpoint, or exposing Proxmox credentials and API keys. All connections benefit from strong end-to-end encryption while maintaining the speed/capability of the SPICE protocol. The client and server are written in python, with a GUI created using Tom Schimansky's [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter).
+
+## Install
+
+Detailed instructions to install ZeroSpice can be found in [INSTALL.md](./INSTALL.md).
+
+The installation instructions cover all necessary components of setting up ZeroSpice, including:
+- Setting up a Proxmox API token
+- Setting up a ZeroTier network
+- Setting up the ZeroSpice server
+- Creating user accounts & secrets on the ZeroSpice server
+- Installing the ZeroSpice client
 
 ## Problem Statement
 
@@ -63,7 +74,7 @@ I'd like to build a future iteration of this toolkit that integrates ZeroTier di
 A proxy server solves the credential exposure problem. Without it, any host using SPICE would need to save either credentials or Proxmox API key, creating various security risks by doing so.
 - **Credential theft:** In the event a client running ZeroSpice is compromised, neither the Proxmox host or credentials / API keys for the Proxmox host are at direct risk.
 - **Over-privileged access:** Proxmox API keys have a limited granularity of permissions. Almost inevitably, a Proxmox API key will be able to do slightly more than the exact thing you want it to do. By putting that API key behind a proxy, ZeroSpice can restrict user functions to exactly what the proxy offers clients and nothing more.
-- **User authentication:** Since proxmox secrets are *not* used to authenticate authorized clients, *something* has to. The proxy server enables user authentication (currently using TOTP) to prevent unauthorized access to the API functions, even within the ZeroTier environment.
+- **User authentication:** Since Proxmox secrets are *not* used to authenticate authorized clients, *something* has to. The proxy server enables user authentication (currently using TOTP) to prevent unauthorized access to the API functions, even within the ZeroTier environment.
 - **Distributed Secrets:** A tertiary benefit to the proxy server is that multiple clients using ZeroSpice will not have to deal with the headaches of shared secrets. The proxy server is able to centrally manage all aspects of authorization (aside from joining the machines to ZeroTier... for now).
 The proxy server acts as a credential vault and authorization gateway, exposing a limited number of API functions for VM access to authorized clients.
 
@@ -80,14 +91,3 @@ This model protects against several flaws / weaknesses in other remote access im
 - Unauthorized access from compromised client devices
 
 Notably, *session hijacking* is still a legitimate attack vector against ZeroSpice. This is an inherent risk to all remote access protocols. If the JWT for the Proxy API and a SPICE configuration file are stolen in real time, they could be used to take over the user session. I am planning to at least partially mitigate this in future versions of the tool by making the port forwarder more picky about who and when it forwards traffic for.
-
-## Install
-
-Detailed instructions to install ZeroSpice can be found in [INSTALL.md](./INSTALL.md).
-
-The installation instructions cover all necessary components of setting up ZeroSpice, including:
-- Setting up a Proxmox API token
-- Setting up a ZeroTier network
-- Setting up the ZeroSpice server
-- Creating user accounts & secrets on the ZeroSpice server
-- Installing the ZeroSpice client

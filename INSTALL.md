@@ -6,19 +6,31 @@ ZeroSpice enables secure remote access to Proxmox VMs via SPICE protocol over a 
 
 ## Architecture Overview
 ```
-┌─────────┐         ┌──────────────┐         ┌─────────┐
-│ Client  │ <─────> │ ZeroSpice    │ <─────> │Proxmox  │
-│  App    │  ZT Net │   Server     │   API   │ Host    │
-└─────────┘         └──────────────┘         └─────────┘
+   Proxmox VE             ZerpSpice Server          ZeroSpice Client
+┌─────────┐       ┌─────────┐       ┌─────────┐
+│ LAN Interface │       │ LAN Interface │       │ LAN Interface │
+│  (Rest API)   │<------│(HTTP Request) │       │    (none)     │
+│               │       │               │       │               │
+│               │       │ ZT Interface  │       │ ZT Interface  │
+│ (SPICE port)  │<----->│ (SPICE port)  │<----->│ (SPICE port)  │
+│               │       │ (Rest API)    │<------│(HTTP Request) │
+└─────────┘       └─────────┘       └─────────┘
+              (LAN Traffic)            (ZeroTier Traffic)
 ```
 
 - **ZeroSpice Client**: Desktop application for connecting to VMs.
 - **ZeroSpice Server**: Linux application for brokering SPICE sessions btweeen Proxmox and ZeroSpice Clients
+- **Proxmox VE**: Proxmox virtual environment hypervisor
 
 ## Prerequisites
 
+- **Client Requirements**:
+  - Python 3.10+
+  - ZeroTier application
+  - virt-viewer application
+
 - **Server Requirements**:
-  - Linux server (Ubuntu 20.04+ recommended)
+  - Linux (Ubuntu 20.04+ recommended)
   - Python 3.10+
   - ZeroTier application
   - Network access to Proxmox
@@ -32,11 +44,6 @@ ZeroSpice enables secure remote access to Proxmox VMs via SPICE protocol over a 
   - Proxmox VE 7.0+
   - API access credentials
   - VMs configured with SPICE display
-
-- **Client Requirements**:
-  - Python 3.10+
-  - ZeroTier application
-  - virt-viewer application
 
 ---
 
@@ -286,7 +293,7 @@ Each user needs to set up TOTP on their device using an authenticator app.
 #### 6.1 Choose an Authenticator App
 
 Popular options:
-- **Authy** (iOS, Android, Desktop) - Recommended
+- **Authy** (iOS, Android, Desktop) - Tested with Authy
 - **Google Authenticator** (iOS, Android)
 - **Microsoft Authenticator** (iOS, Android)
 - **1Password** (with TOTP support)
