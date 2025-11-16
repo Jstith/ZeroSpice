@@ -2,6 +2,8 @@
 
 ZeroSpice is a python-based toolkit that enables secure remote access to Proxmox VMs using the SPICE protocol in a private environment. Leveraging two open-source technologies: ZeroTier and Spice, ZeroSpice delivers a security-focused yet robust way to use virtual machines from anywhere on the internet, prioritizing accessability and least privilege to build a modern, secure access environment.
 
+![ZeroSpice Demo](docs/zerospice-demo.gif)
+
 ![Python 3 compatible](https://img.shields.io/badge/python-3.x-blue.svg)
 ![PyPI version](https://img.shields.io/pypi/v/bloodhound.svg)
 ![License: MIT](https://img.shields.io/pypi/l/bloodhound.svg)

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import customtkinter as ctk
 import requests
 import json
