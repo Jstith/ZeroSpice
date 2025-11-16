@@ -126,7 +126,7 @@ if [ "$SKIP_ENV" != true ]; then
     PROXMOX_IP=$(prompt_with_default "Proxmox IP address" "")
     PROXMOX_API_TOKEN=$(prompt_with_default "Proxmox API Token (format: user@realm!tokenid=uuid)" "")
     PROXY_IP=$(prompt_with_default "Proxy server IP (ZeroTier IP)" "")
-    PROXY_HTTP_PORT=$(prompt_with_default "Proxy HTTP port" "8000")
+    PROXY_HTTP_PORT=$(prompt_with_default "Proxy HTTP port" "80")
     PROXY_SPICE_PORT=$(prompt_with_default "Proxy SPICE port" "3128")
 
     # Generate JWT secret

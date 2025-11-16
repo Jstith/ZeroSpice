@@ -1,5 +1,3 @@
-**In Development - AI slop warning**
-
 # ZeroSpice Installation Guide
 
 ZeroSpice enables secure remote access to Proxmox VMs via SPICE protocol over a ZeroTier network. To achieve this, ZeroSpice uses a configured server and at least one configured client. This guide walks you through setting up both the server and client components.
@@ -7,14 +5,14 @@ ZeroSpice enables secure remote access to Proxmox VMs via SPICE protocol over a 
 ## Architecture Overview
 ```
    Proxmox VE            ZeroSpice Server       ZeroSpice Client
-┌─────------────┐       ┌──────------───┐       ┌──------───────┐
+┌───────────────┐       ┌───────────────┐       ┌───────────────┐
 │ LAN Interface │       │ LAN Interface │       │ LAN Interface │
 │  (Rest API)   │<------│(HTTP Request) │       │    (none)     │
 │               │       │               │       │               │
 │               │       │ ZT Interface  │       │ ZT Interface  │
 │ (SPICE port)  │<----->│ (SPICE port)  │<----->│ (SPICE port)  │
 │               │       │ (Rest API)    │<------│(HTTP Request) │
-└───────------──┘       └─------────────┘       └───────------──┘
+└───────────────┘       └───────────────┘       └───────────────┘
               (LAN Traffic)            (ZeroTier Traffic)
 ```
 
@@ -61,7 +59,7 @@ Before using ZeroSpice, you need to enable SPICE display on the VMs you want to 
 4. Change display type to **SPICE**
 5. Click **OK** to save
 
-[IMAGE: Proxmox Display Settings]
+![Proxmox Spice Settings](docs/install_proxmox_spice_1.png)
 
 **Option B: Via Command Line**
 ```bash
@@ -88,12 +86,13 @@ ZeroSpice needs API credentials to communicate with Proxmox.
 1. Log into Proxmox web interface
 2. Navigate to **Datacenter** → **Permissions** → **Users**
 3. Click **Add** to create a new user:
-   - **User name**: `zerospice`
-   - **Realm**: `Proxmox VE authentication server`
-   - **Group**: (optional)
+   - **User name**: `zerospice` or whatever you want
+   - **Realm**: Your provmox realm (default: `pve`)
+   - **Expire**: Your preference, but never is fine
 4. Click **Add**
 
-[IMAGE: Creating Proxmox User]
+![Creating Proxmox User](docs/install_proxmox_user_1.png)
+*Note: This image creates a user with the name `api-user`. Name it whatever you want, just remember which you go with.*
 
 #### 2.2 Create an API Token
 
@@ -106,13 +105,24 @@ ZeroSpice needs API credentials to communicate with Proxmox.
 4. Click **Add**
 5. **IMPORTANT**: Copy the displayed token value - you won't be able to see it again!
 
-[IMAGE: Creating API Token]
-
 The token format will look like: `zerospice@pve!zerospice-token=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`
+
+![Token setup](docs/install_proxmox_token_1.png)
 
 #### 2.3 Set Permissions
 
-The API user needs permissions to access VM information:
+The API user needs permissions to access VM information.
+
+**Option A: Via Proxmox Web Gui**
+
+1. Navigate to **Datacenter** → **Permissions**
+2. Add *user* permission
+  - Path: Select the VM(s) you wish to access
+  - User: Select your API user
+  - Role: Select `PVEVMUser`
+
+**Option B: Via Command Line**
+
 ```bash
 # Grant permissions at datacenter level
 pveum acl modify / -user zerospice@pve -role PVEVMUser
@@ -122,7 +132,8 @@ pveum acl modify / -user zerospice@pve -role PVEVMUser
 - VM.Audit (view VM information)
 - VM.Console (access SPICE console)
 
-[IMAGE: Setting Permissions]
+![Set User Permissions](docs/install_proxmox_permissions_1.png)
+*Note: I created permissions for both the user and the user's API token. If one doesn't work for you, try the other.*
 
 ---
 
@@ -138,8 +149,6 @@ ZeroTier creates a secure network between your server and clients.
 4. Configure network settings:
    - **Access Control**: Private (manual authorization)
    - **IPv4 Auto-Assign**: Enabled (or configure manually)
-
-[IMAGE: ZeroTier Network Settings]
 
 #### 3.2 Install ZeroTier on Server
 
@@ -171,8 +180,6 @@ sudo zerotier-cli listnetworks
 5. Check the **Auth** checkbox to authorize it
 6. Note the **Managed IP** assigned to your server
 
-[IMAGE: Authorizing ZeroTier Member]
-
 ---
 
 ### Step 4: Install ZeroSpice Server
@@ -182,8 +189,8 @@ Now install the ZeroSpice server software on your Linux server.
 #### 4.1 Clone the Repository
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/zerospice-server.git
-cd zerospice-server
+git clone https://github.com/Jstith/ZeroSpice.git
+cd ZeroSpice/Server
 ```
 
 #### 4.2 Run Installation Script
@@ -204,7 +211,7 @@ The installation script will prompt you for the following information:
 | **Proxmox IP address** | IP address of your Proxmox host | `192.168.1.100` |
 | **Proxmox API Token** | Full API token from Step 2 | `zerospice@pve!zerospice-token=xxx...` |
 | **Proxy server IP** | ZeroTier IP of the server | `10.147.10.10` |
-| **Proxy HTTP port** | Port for web interface | `8000` (default) |
+| **Proxy HTTP port** | Port for web interface | `80` (default) |
 | **Proxy SPICE port** | Port for SPICE connections | `3128` (default) |
 
 [IMAGE: Installation Script Running]
@@ -216,7 +223,7 @@ Please provide the following configuration values:
 Proxmox IP address: 192.168.1.100
 Proxmox API Token (format: user@realm!tokenid=uuid): zerospice@pve!zerospice-token=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 Proxy server IP (usually ZeroTier IP): 10.147.10.10
-Proxy HTTP port [8000]: 8000
+Proxy HTTP port [8000]: 80
 Proxy SPICE port [3128]: 3128
 
 Generating JWT secret...
@@ -255,7 +262,7 @@ Add this line to your .env file:
 TOTP_SECRET_ALICE=JBSWY3DPEHPK3PXPJBSWY3DP
 ```
 
-[IMAGE: Generated QR Code]
+*Note: You can use the QR code generated, or take the token and enter it directly to an app like authy.*
 
 #### 5.2 Add Secret to Configuration
 
@@ -304,8 +311,6 @@ Popular options:
 2. Select "Add Account" or "Scan QR Code"
 3. Scan the QR code generated in Step 5
 4. The app will display a 6-digit code that changes every 30 seconds
-
-[IMAGE: Scanning QR Code in Authy]
 
 #### 6.3 Verify TOTP Setup
 
@@ -364,10 +369,10 @@ sudo journalctl -u zerospice -n 50
 Test the server is accessible:
 ```bash
 # From the server itself
-curl http://localhost:8000
+curl http://localhost/health
 
 # From another machine on the ZeroTier network
-curl http://<zerotier-ip>:8000
+curl http://<zerotier-ip>/health
 ```
 
 ---
@@ -390,25 +395,26 @@ Finally, install the ZeroSpice client application on the machines that will conn
 [Link to client download or repository]
 ```bash
 # Example for Linux
-git clone https://github.com/yourusername/zerospice-client.git
-cd zerospice-client
+git clone https://github.com/Jstith/ZeroSpice.git
+cd ZeroSpice/Client
+pip install -r requirements.txt
 ```
 
-#### 8.3 Configure Client
-
-[Configuration steps specific to your client application]
-
-#### 8.4 Connect to a VM
+#### 8.3 Connect to a VM
 
 1. Launch the ZeroSpice client application
 2. Enter connection details:
-   - **Server Address**: `http://<server-zerotier-ip>:8000`
+   - **Server Address**: `http://<server-zerotier-ip>`
    - **Username**: Your username (e.g., `alice`)
    - **TOTP Code**: Current 6-digit code from authenticator
 3. Select a VM from the list
 4. Click **Connect**
 
-[IMAGE: Client Application Screenshot]
+![Client sign in](docs/install_client_1.png)
+
+![Client auth](docs/install_client_2.png)
+
+![Client connect](docs/install_client_3.png)
 
 ---
 
@@ -416,16 +422,16 @@ cd zerospice-client
 
 Before considering your installation complete, verify:
 
-- [ ] SPICE is enabled on target Proxmox VMs
-- [ ] Proxmox API token works and has correct permissions
-- [ ] ZeroTier is installed and authorized on server
-- [ ] ZeroSpice server is running (`systemctl status zerospice`)
-- [ ] Server is accessible via ZeroTier IP
-- [ ] TOTP secrets are generated for all users
-- [ ] Users can authenticate with TOTP codes
-- [ ] ZeroTier is installed and authorized on client
-- [ ] Client can reach server via ZeroTier network
-- [ ] Client can successfully connect to a VM
+- SPICE is enabled on target Proxmox VMs
+- Proxmox API token works and has correct permissions
+- ZeroTier is installed and authorized on server
+- ZeroSpice server is running (`systemctl status zerospice`)
+- Server is accessible via ZeroTier IP
+- TOTP secrets are generated for all users
+- Users can authenticate with TOTP codes
+- ZeroTier is installed and authorized on client
+- Client can reach server via ZeroTier network
+- Client can successfully connect to a VM
 
 ---
 
