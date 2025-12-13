@@ -10,6 +10,10 @@ ZeroSpice is a python-based toolkit that enables secure remote access to Proxmox
 
 ---
 
+## GO UPDATE !!
+
+I am working on migrating the front-end of ZeroSpice to go. Use the `go-desktop-build` branch to access the latest go client.
+
 ## Table on Contents
 
 1. [Overview](#overview)
