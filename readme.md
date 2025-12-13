@@ -1,3 +1,15 @@
+# Go Branch!!
+
+I am working on transitioning the front end of ZeroSpice into Go, and transitioning the mesh net infrastructure to tailscale. Currently, I have ported the following features:
+- CLI authentication
+- CLI interactive session spawning
+- CLI SPICE file handling
+
+I am still working on:
+- Building the GUI in Go
+- Updating integrating tailscale to the Go application
+- Updating the server to be compatable with tailscale
+
 # ZeroSpice: Secure Remote Access to Proxmox VMs
 
 ZeroSpice is a python-based toolkit that enables secure remote access to Proxmox VMs using the SPICE protocol in a private environment. Leveraging two open-source technologies: ZeroTier and Spice, ZeroSpice delivers a security-focused yet robust way to use virtual machines from anywhere on the internet, prioritizing accessability and least privilege to build a modern, secure access environment.
