@@ -231,7 +231,7 @@ func (c *Client) LaunchSpiceViewer(spiceText string) error {
 	// Use appropriate viewer command based on OS
 	viewerCmd := "remote-viewer"
 	if runtime.GOOS == "windows" {
-		viewerCmd = "virt-viewer"
+		viewerCmd = "remote-viewer.exe"
 	}
 
 	cmd := exec.Command(viewerCmd, spiceFile.Name())
