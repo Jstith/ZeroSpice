@@ -2,3 +2,8 @@ Proxy/__pycache__
 Proxy/.env
 RemoteHost/__pycache__
 RemoteHost/config.json
+**/CLAUDE.md
+**/zerospice-cli
+**/zerospice-cli.exe
+**/*.exe
+**/config.json

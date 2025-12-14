@@ -14,6 +14,10 @@ ZeroSpice is a python-based toolkit that enables secure remote access to Proxmox
 
 I am working on migrating the front-end of ZeroSpice to go. Use the `go-desktop-build` branch to access the latest go client.
 
+### Install Pre-Compiled Binaries
+
+To install the pre-compiled go binaries for the ZeroSpice Client, go to [Releases](https://github.com/Jstith/ZeroSpice/releases)
+
 ## Table on Contents
 
 1. [Overview](#overview)
