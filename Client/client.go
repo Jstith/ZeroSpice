@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
-	"runtime"
 	"time"
 )
 
@@ -213,7 +212,7 @@ func (c *Client) GetSpiceFile(node string, vmid int) (string, error) {
 	return string(body), nil
 }
 
-// LaunchSpiceViewer writes the SPICE file and launches the appropriate viewer
+// LaunchSpiceViewer writes the SPICE file and launches remote-viewer
 func (c *Client) LaunchSpiceViewer(spiceText string) error {
 	spiceFile, err := os.CreateTemp("", "spice-*.vv")
 	if err != nil {
@@ -228,15 +227,9 @@ func (c *Client) LaunchSpiceViewer(spiceText string) error {
 	}
 	spiceFile.Close()
 
-	// Use appropriate viewer command based on OS
-	viewerCmd := "remote-viewer"
-	if runtime.GOOS == "windows" {
-		viewerCmd = "remote-viewer.exe"
-	}
-
-	cmd := exec.Command(viewerCmd, spiceFile.Name())
+	cmd := exec.Command("remote-viewer", spiceFile.Name())
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to run %s: %w (ensure %s is installed)", viewerCmd, err, viewerCmd)
+		return fmt.Errorf("failed to run remote-viewer: %w (ensure remote-viewer is installed)", err)
 	}
 
 	return nil
