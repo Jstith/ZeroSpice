@@ -10,6 +10,10 @@ I am still working on:
 - Updating integrating tailscale to the Go application
 - Updating the server to be compatable with tailscale
 
+## Install Pre-built Binaries
+
+Download pre-built binaries for the ZeroSpice Client from [Releases](https://github.com/Jstith/ZeroSpice/releases)
+
 # ZeroSpice: Secure Remote Access to Proxmox VMs
 
 ZeroSpice is a python-based toolkit that enables secure remote access to Proxmox VMs using the SPICE protocol in a private environment. Leveraging two open-source technologies: ZeroTier and Spice, ZeroSpice delivers a security-focused yet robust way to use virtual machines from anywhere on the internet, prioritizing accessability and least privilege to build a modern, secure access environment.
