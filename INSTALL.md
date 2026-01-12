@@ -119,12 +119,12 @@ For local use, you may skip the VPN installation and bind the server to local in
 
 #### Quick Install (curl | sh):
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yourusername/zerospice/main/Server/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/Jstith/zerospice/main/Server/install.sh | sudo bash
 ```
 
 #### Manual Install:
 ```bash
-git clone https://github.com/yourusername/zerospice.git
+git clone https://github.com/Jstith/zerospice.git
 cd zerospice/Server
 sudo ./install.sh
 ```
@@ -197,7 +197,7 @@ curl http://localhost/health
 #### Install Dependencies
 
 ```bash
-git clone https://github.com/yourusername/zerospice.git
+git clone https://github.com/Jstith/zerospice.git
 cd zerospice/Client
 pip install -r requirements.txt
 ```
