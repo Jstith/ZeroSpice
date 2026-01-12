@@ -1,0 +1,25 @@
+services:
+  zerospice:
+    build: .
+    container_name: zerospice-server
+    restart: unless-stopped
+
+    # Use host network mode for Tailscale/VPN access
+    network_mode: host
+
+    # Environment variables from .env file
+    env_file:
+      - .env
+
+    # Volume for QR code generation (optional)
+    volumes:
+      - ./qr_codes:/app/qr_codes
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:80/health').read()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
