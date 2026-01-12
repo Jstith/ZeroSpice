@@ -10,9 +10,18 @@ ZeroSpice is a python-based toolkit that enables secure remote access to Proxmox
 
 ---
 
-## GO UPDATE !!
+## January 20206: What's new?
+
+The newest update to ZeroSpice includes foundational security changes and quality of life improvements:
+- Port forwarded sessions to the SPICE server are now session-authenticated
+- User enrollment is simplified and accessible from the client app
+- The server deployment has been simplified to a one-shot script using docker!
+
+### Go Progress
 
 I am working on migrating the front-end of ZeroSpice to go. Use the `go-desktop-build` branch to access the latest go client.
+
+*Currently, the Jan 2026 changes are not implemented on the go client.*
 
 ### Install Pre-Compiled Binaries
 

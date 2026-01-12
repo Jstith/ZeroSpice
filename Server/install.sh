@@ -1,142 +1,200 @@
 #!/bin/bash
 set -e
 
-echo "========================================="
-echo "ZeroSpice Server Installation Script"
-echo "========================================="
+echo "ZeroSpice Server Installer"
 echo ""
 
-# Check if running as root
 if [ "$EUID" -ne 0 ]; then
-    echo "Error: This script must be run as root (use sudo)"
+    echo "[ERROR] Must run as root (use sudo)"
     exit 1
 fi
 
-# Get the project root directory (where install.sh is located)
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$PROJECT_ROOT"
+# Check if whiptail is available
+if command -v whiptail &> /dev/null; then
+    USE_WHIPTAIL=true
+else
+    USE_WHIPTAIL=false
+    echo "[INFO] Whiptail not found, using basic prompts"
+fi
 
-echo "Project directory: $PROJECT_ROOT"
-echo ""
+# Detect if running from curl pipe
+if [ -t 0 ]; then
+    INTERACTIVE=true
+else
+    INTERACTIVE=false
+    USE_WHIPTAIL=false
+fi
 
-# Check for ZeroTier installation
-echo "========================================="
-echo "ZeroTier Check"
-echo "========================================="
-echo ""
+# Check Docker
+if ! command -v docker &> /dev/null; then
+    echo "[ERROR] Docker not found. Install: https://docs.docker.com/engine/install/"
+    exit 1
+fi
 
-if ! command -v zerotier-cli &> /dev/null; then
-    echo "⚠️  ZeroTier is not installed!"
-    echo ""
-    echo "ZeroSpice requires ZeroTier to be installed and configured."
-    echo ""
-    echo "To install ZeroTier:"
-    echo "  curl -s https://install.zerotier.com | sudo bash"
-    echo ""
-    echo "After installation:"
-    echo "  1. Join your ZeroTier network: sudo zerotier-cli join <network-id>"
-    echo "  2. Authorize the device in your ZeroTier Central dashboard"
-    echo "  3. Re-run this installation script"
-    echo ""
-    read -p "Do you want to install ZeroTier now? (y/N): " install_zt
+if ! command -v docker compose &> /dev/null; then
+    echo "[ERROR] Docker Compose not found. Install Docker Compose plugin"
+    exit 1
+fi
 
-    if [[ "$install_zt" =~ ^[Yy]$ ]]; then
-        echo ""
-        echo "Installing ZeroTier..."
-        curl -s https://install.zerotier.com | bash
+# Get script directory or download location
+if [ "$INTERACTIVE" = true ] && [ -f "docker-compose.yml" ]; then
+    INSTALL_DIR=$(pwd)
+    echo "[INFO] Installing from: $INSTALL_DIR"
+else
+    INSTALL_DIR="/opt/zerospice"
+    echo "[INFO] Installing to: $INSTALL_DIR"
+    mkdir -p "$INSTALL_DIR"
+    cd "$INSTALL_DIR"
 
-        echo ""
-        echo "ZeroTier installed successfully!"
-        echo ""
-        read -p "Enter your ZeroTier network ID to join: " zt_network_id
+    # Download files
+    BASE_URL="https://raw.githubusercontent.com/Jstith/zerospice/main/Server"
 
-        if [ -n "$zt_network_id" ]; then
-            zerotier-cli join "$zt_network_id"
-            echo ""
-            echo "✓ Joined ZeroTier network: $zt_network_id"
-            echo ""
-            echo "⚠️  IMPORTANT: Authorize this device in your ZeroTier Central dashboard"
-            echo "   Visit: https://my.zerotier.com/network/$zt_network_id"
-            echo ""
-            read -p "Press Enter once you've authorized the device to continue..."
-        fi
-    else
-        echo ""
-        echo "Installation cancelled. Please install and configure ZeroTier first."
+    echo "[INFO] Downloading configuration files..."
+    curl -fsSL "$BASE_URL/docker-compose.yml" -o docker-compose.yml
+    curl -fsSL "$BASE_URL/Dockerfile" -o Dockerfile
+    curl -fsSL "$BASE_URL/requirements.txt" -o requirements.txt
+    curl -fsSL "$BASE_URL/.dockerignore" -o .dockerignore
+    curl -fsSL "$BASE_URL/.env.example" -o .env.example
+
+    mkdir -p src
+    curl -fsSL "$BASE_URL/src/spice_proxy.py" -o src/spice_proxy.py
+    curl -fsSL "$BASE_URL/src/admin.py" -o src/admin.py
+fi
+
+# Helper function for whiptail input
+get_input() {
+    local title="$1"
+    local prompt="$2"
+    local default="$3"
+    local result
+
+    result=$(whiptail --title "$title" --inputbox "$prompt" 10 60 "$default" 3>&1 1>&2 2>&3)
+
+    if [ $? -ne 0 ]; then
         exit 1
     fi
-else
-    echo "✓ ZeroTier is installed"
 
-    # Check if connected to any networks
-    zt_status=$(zerotier-cli listnetworks 2>/dev/null | tail -n +2)
-    if [ -z "$zt_status" ]; then
-        echo "⚠️  Warning: Not connected to any ZeroTier networks"
-        echo ""
-        read -p "Enter your ZeroTier network ID to join (or press Enter to skip): " zt_network_id
-        if [ -n "$zt_network_id" ]; then
-            zerotier-cli join "$zt_network_id"
-            echo "✓ Joined network: $zt_network_id"
-            echo "⚠️  Remember to authorize this device in ZeroTier Central"
-        fi
-    else
-        echo "✓ Connected to ZeroTier network(s)"
-        echo "$zt_status"
-    fi
-fi
-
-echo ""
-
-# Function to prompt for input with default value
-prompt_with_default() {
-    local prompt="$1"
-    local default="$2"
-    local value
-
-    if [ -n "$default" ]; then
-        read -p "$prompt [$default]: " value
-        echo "${value:-$default}"
-    else
-        read -p "$prompt: " value
-        echo "$value"
-    fi
+    echo "$result"
 }
 
-# Configure .env file
-echo "========================================="
-echo "Configuration"
-echo "========================================="
-echo ""
+# Configuration
+if [ ! -f ".env" ]; then
+    echo ""
+    echo "[INFO] Creating .env configuration file"
 
-if [ -f ".env" ]; then
-    echo ".env file already exists."
-    read -p "Do you want to reconfigure it? (y/N): " reconfigure
-    if [[ ! "$reconfigure" =~ ^[Yy]$ ]]; then
-        echo "Keeping existing .env file..."
-        SKIP_ENV=true
+    # Load existing values if present
+    LOAD_EXISTING=false
+    if [ -f ".env" ] && [ "$USE_WHIPTAIL" = true ]; then
+        if whiptail --title "Existing Configuration" --yesno "An existing .env file was found. Would you like to load values from it?" 10 60; then
+            LOAD_EXISTING=true
+            source .env
+        fi
     fi
-fi
 
-if [ "$SKIP_ENV" != true ]; then
-    echo ""
-    echo "Please provide the following configuration values:"
-    echo ""
+    if [ "$USE_WHIPTAIL" = true ]; then
+        # Whiptail-based configuration
+        whiptail --title "ZeroSpice Configuration" --msgbox "Welcome to ZeroSpice configuration.\n\nYou'll configure:\n- Network mode (Tailscale, local, or custom)\n- Proxmox connection\n- Port settings" 14 70
 
-    # Prompt for values
-    PROXMOX_IP=$(prompt_with_default "Proxmox IP address" "")
-    PROXMOX_API_TOKEN=$(prompt_with_default "Proxmox API Token (format: user@realm!tokenid=uuid)" "")
-    PROXY_IP=$(prompt_with_default "Proxy server IP (ZeroTier IP)" "")
-    PROXY_HTTP_PORT=$(prompt_with_default "Proxy HTTP port" "80")
-    PROXY_SPICE_PORT=$(prompt_with_default "Proxy SPICE port" "3128")
+        # Network mode selection
+        NETWORK_MODE=$(whiptail --title "Network Configuration" --menu "Choose network deployment mode:" 14 70 3 \
+            "tailscale" "Tailscale VPN (recommended)" \
+            "local" "Local network / All interfaces (0.0.0.0)" \
+            "custom" "Custom IP address" \
+            3>&1 1>&2 2>&3)
 
-    # Generate JWT secret
-    echo ""
-    echo "Generating JWT secret..."
-    JWT_SECRET=$(openssl rand -hex 32)
+        if [ $? -ne 0 ]; then
+            exit 1
+        fi
+
+        case $NETWORK_MODE in
+            tailscale|local)
+                PROXY_IP="0.0.0.0"
+                ;;
+            custom)
+                PROXY_IP=$(get_input "Custom IP Address" "Enter the IP address to bind to:" "${PROXY_IP:-}")
+                if [ -z "$PROXY_IP" ]; then
+                    whiptail --title "Error" --msgbox "IP address is required!" 8 50
+                    exit 1
+                fi
+                ;;
+        esac
+
+        # Proxmox configuration
+        whiptail --title "Proxmox Configuration" --msgbox "Configure Proxmox connection.\n\nYou'll need:\n- Proxmox IP address\n- API token (format: user@realm!tokenid=uuid)" 12 70
+
+        PROXMOX_IP=$(get_input "Proxmox IP Address" "Enter Proxmox server IP:" "${PROXMOX_IP:-}")
+
+        if [ -z "$PROXMOX_IP" ]; then
+            whiptail --title "Error" --msgbox "Proxmox IP is required!" 8 50
+            exit 1
+        fi
+
+        PROXMOX_API_TOKEN=$(get_input "Proxmox API Token" "Enter API token:\n(format: user@realm!tokenid=uuid)" "${PROXMOX_API_TOKEN:-}")
+
+        if [ -z "$PROXMOX_API_TOKEN" ]; then
+            whiptail --title "Error" --msgbox "API token is required!" 8 50
+            exit 1
+        fi
+
+        # Port configuration
+        PROXY_HTTP_PORT=$(get_input "HTTP Port" "Enter HTTP port for REST API:" "${PROXY_HTTP_PORT:-80}")
+        PROXY_HTTP_PORT=${PROXY_HTTP_PORT:-80}
+
+        # JWT secret
+        if [ -n "$JWT_SECRET" ] && [ "$LOAD_EXISTING" = true ]; then
+            if whiptail --title "JWT Secret" --yesno "Use existing JWT secret?\n\n(Select No to generate new)" 10 60; then
+                USE_EXISTING_JWT=true
+            else
+                USE_EXISTING_JWT=false
+            fi
+        else
+            USE_EXISTING_JWT=false
+        fi
+
+        if [ "$USE_EXISTING_JWT" != true ]; then
+            JWT_SECRET=$(openssl rand -hex 32)
+        fi
+
+        # Summary
+        SUMMARY="Configuration Summary:\n\n"
+        SUMMARY+="Network:     $NETWORK_MODE\n"
+        SUMMARY+="Bind IP:     $PROXY_IP\n"
+        SUMMARY+="HTTP Port:   $PROXY_HTTP_PORT\n"
+        SUMMARY+="Proxmox IP:  $PROXMOX_IP\n"
+
+        if ! whiptail --title "Confirm" --yesno "$SUMMARY\nProceed?" 14 60; then
+            echo "[INFO] Installation cancelled"
+            exit 0
+        fi
+
+    else
+        # Basic prompt-based configuration
+        if [ "$INTERACTIVE" = true ]; then
+            read -p "Proxmox IP: " PROXMOX_IP
+            read -p "Proxmox API Token: " PROXMOX_API_TOKEN
+            read -p "Proxy bind address [0.0.0.0]: " PROXY_IP
+            PROXY_IP=${PROXY_IP:-0.0.0.0}
+            read -p "HTTP Port [80]: " PROXY_HTTP_PORT
+            PROXY_HTTP_PORT=${PROXY_HTTP_PORT:-80}
+        else
+            # Non-interactive mode (curl pipe)
+            echo "[WARN] Non-interactive mode: Using environment variables"
+            PROXMOX_IP=${PROXMOX_IP:-}
+            PROXMOX_API_TOKEN=${PROXMOX_API_TOKEN:-}
+            PROXY_IP=${PROXY_IP:-0.0.0.0}
+            PROXY_HTTP_PORT=${PROXY_HTTP_PORT:-80}
+
+            if [ -z "$PROXMOX_IP" ] || [ -z "$PROXMOX_API_TOKEN" ]; then
+                echo "[ERROR] Required: PROXMOX_IP and PROXMOX_API_TOKEN environment variables"
+                echo "Usage: curl -fsSL <url> | PROXMOX_IP=x.x.x.x PROXMOX_API_TOKEN=xxx sudo -E bash"
+                exit 1
+            fi
+        fi
+
+        JWT_SECRET=$(openssl rand -hex 32)
+    fi
 
     # Create .env file
-    echo ""
-    echo "Creating .env file..."
     cat > .env << EOF
 # Proxmox Configuration
 PROXMOX_IP=$PROXMOX_IP
@@ -145,104 +203,39 @@ PROXMOX_API_TOKEN=$PROXMOX_API_TOKEN
 # Proxy Server Configuration
 PROXY_IP=$PROXY_IP
 PROXY_HTTP_PORT=$PROXY_HTTP_PORT
-PROXY_SPICE_PORT=$PROXY_SPICE_PORT
 
-# JWT Secret (auto-generated)
+# Ephemeral Port Range
+PROXY_SPICE_PORT_MIN=40000
+PROXY_SPICE_PORT_MAX=41000
+
+# JWT Secret
 JWT_SECRET=$JWT_SECRET
 
-# TOTP Secrets (add your users here)
-# Generate secrets with: python3 src/setup_totp.py <username>
-# TOTP_SECRET_ALICE=JBSWY3DPEHPK3PXP
-# TOTP_SECRET_BOB=ANOTHER_SECRET_HERE
+# TOTP Secrets (add via enrollment)
 EOF
 
-    echo "✓ .env file created successfully!"
-    echo ""
-    echo "IMPORTANT: You still need to add TOTP secrets for users."
-    echo "Run: ./venv/bin/python3 src/setup_totp.py <username>"
-    echo ""
-fi
-
-# Install system dependencies
-echo "========================================="
-echo "Installing Dependencies"
-echo "========================================="
-echo ""
-echo "Step 1: Installing system dependencies..."
-apt-get update
-apt-get install -y python3 python3-pip python3-venv openssl
-
-# Create virtual environment if it doesn't exist
-if [ ! -d "venv" ]; then
-    echo ""
-    echo "Step 2: Creating Python virtual environment..."
-    python3 -m venv venv
+    echo "[OK] Configuration created: .env"
 else
-    echo ""
-    echo "Step 2: Virtual environment already exists, skipping..."
+    echo "[INFO] Using existing .env file"
 fi
 
-# Activate venv and install dependencies
+# Build and start
 echo ""
-echo "Step 3: Installing Python dependencies..."
-source venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
-deactivate
+echo "[INFO] Building Docker image..."
+docker compose build
 
-# Install systemd service
-echo ""
-echo "========================================="
-echo "Installing Systemd Service"
-echo "========================================="
-echo ""
-
-# Create systemd service file directly
-echo "Creating systemd service file..."
-cat > /etc/systemd/system/zerospice.service << EOF
-[Unit]
-Description=ZeroSpice Server
-After=network.target zerotier-one.service
-Wants=zerotier-one.service
-
-[Service]
-Type=simple
-User=root
-WorkingDirectory=$PROJECT_ROOT
-ExecStart=$PROJECT_ROOT/venv/bin/python3 src/run.py
-Restart=always
-RestartSec=10
-StandardOutput=journal
-StandardError=journal
-
-# Load environment variables from .env file
-EnvironmentFile=$PROJECT_ROOT/.env
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-# Reload systemd
-echo "Reloading systemd daemon..."
-systemctl daemon-reload
+echo "[INFO] Starting ZeroSpice server..."
+docker compose up -d
 
 echo ""
-echo "========================================="
-echo "Installation Complete!"
-echo "========================================="
+echo "============================================"
+echo "ZeroSpice Server Installed"
+echo "============================================"
 echo ""
-echo "Configuration summary:"
-echo "  Proxmox IP:    $PROXMOX_IP"
-echo "  Proxy IP:      $PROXY_IP"
-echo "  HTTP Port:     $PROXY_HTTP_PORT"
-echo "  SPICE Port:    $PROXY_SPICE_PORT"
+echo "Status: docker compose ps"
+echo "Logs:   docker compose logs -f"
+echo "Health: curl http://localhost/health"
 echo ""
-echo "Next steps:"
-echo "  1. Add TOTP users:     ./venv/bin/python3 src/setup_totp.py <username>"
-echo "  2. Enable service:     sudo systemctl enable zerospice"
-echo "  3. Start service:      sudo systemctl start zerospice"
-echo "  4. Check status:       sudo systemctl status zerospice"
-echo "  5. View logs:          sudo journalctl -u zerospice -f"
-echo ""
-echo "To reconfigure, run: sudo ./install.sh"
+echo "Add users:"
+echo "  docker compose exec zerospice python3 src/admin.py enroll-token"
 echo ""
